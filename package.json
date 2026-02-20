@@ -1,0 +1,19 @@
+{
+  "name": "openclaw-knowledge-system",
+  "version": "0.0.1",
+  "description": "Personal knowledge base management system for OpenClaw",
+  "main": "knowledge-handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "openclaw",
+    "knowledge-base",
+    "ai-assistant"
+  ],
+  "author": "symbolLi",
+  "license": "MIT",
+  "dependencies": {
+    "sqlite3": "^5.1.6"
+  }
+}

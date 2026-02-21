@@ -35,7 +35,7 @@ async function handleArticle() {
     // 获取URL参数
     const url = process.argv[4] || 'https://example.com';
     
-    console.log(`🔍 Fetching with browser: ${url}`);
+    console.log(`🔍 Fetching: ${url}`);
     
     // 使用浏览器抓取网页内容
     const fetchResult = await browserFetcher.fetch(url);
@@ -67,12 +67,8 @@ async function handleArticle() {
     
   } catch (error) {
     console.error('❌ Article processing failed:', error.message);
-    if (error.message.includes('内存不足') || error.message.includes('memory')) {
-      console.log('💡 Tip: 服务器资源紧张，请手动复制文章内容并发送给我，我会直接进行智能处理。');
-    } else if (error.message.includes('timeout') || error.message.includes('超时')) {
-      console.log('💡 Tip: 页面加载超时，请稍后重试或手动复制内容。');
-    } else {
-      console.log('💡 Tip: 该文章无法自动抓取，请手动复制文章内容并发送给我，我会直接进行智能处理。');
+    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+      console.log('💡 Tip: The article cannot be auto-fetched. Please save it manually and reply "已保存" to continue processing.');
     }
     process.exit(1);
   }

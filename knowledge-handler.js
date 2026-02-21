@@ -1,39 +1,56 @@
 #!/usr/bin/env node
 
-/**
- * OpenClaw Knowledge System - Main Entry Point
- * Version: v0.0.1
- * 
- * This is the main entry point for all knowledge system operations.
- * It handles command line arguments and routes to appropriate handlers.
- */
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const { DATABASE_PATH, DATA_DIR } = require('./config/settings');
-const { initializeDatabase } = require('./lib/database');
+const settings = require('./config/settings');
+const { initDatabase } = require('./lib/database');
+const { fetchWebpage } = require('./lib/web-fetcher');
 
 async function main() {
+  const command = process.argv[2];
+  
+  switch (command) {
+    case 'test':
+      console.log('✅ OpenClaw Knowledge System - Stage 1 & 2a Ready!');
+      break;
+      
+    case 'article':
+      await handleArticle();
+      break;
+      
+    default:
+      console.log('Usage: knowledge-handler.js [test|article]');
+      process.exit(1);
+  }
+}
+
+async function handleArticle() {
   try {
-    // Initialize database if not exists
-    await initializeDatabase();
+    // 初始化数据库
+    const db = await initDatabase();
     
-    // For phase 1, just return a simple message
-    console.log(JSON.stringify({
-      type: 'message',
-      content: '✅ OpenClaw Knowledge System v0.0.1 - Base architecture ready!'
-    }));
+    // 获取URL参数（简化版本，实际会从命令行参数获取）
+    const url = process.argv[4] || 'https://example.com';
+    
+    console.log(`🔍 Fetching: ${url}`);
+    
+    // 抓取网页内容
+    const content = await fetchWebpage(url);
+    
+    console.log('✅ Content fetched successfully!');
+    console.log(`Title: ${content.title}`);
+    console.log(`Content length: ${content.content.length} characters`);
+    
+    // TODO: 集成AI处理、存储等后续步骤
     
   } catch (error) {
-    console.error(JSON.stringify({
-      type: 'error',
-      message: `❌ Initialization failed: ${error.message}`
-    }));
+    console.error('❌ Article processing failed:', error.message);
+    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
+      console.log('💡 Tip: The article cannot be auto-fetched. Please save it manually and reply "已保存" to continue processing.');
+    }
     process.exit(1);
   }
 }
 
-// Handle command line execution
-if (require.main === module) {
-  main().catch(console.error);
-}
-
-module.exports = { main };
+main().catch(console.error);

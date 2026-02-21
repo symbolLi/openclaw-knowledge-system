@@ -14,6 +14,10 @@
   "author": "symbolLi",
   "license": "MIT",
   "dependencies": {
-    "sqlite3": "^5.1.6"
+    "axios": "^1.13.5",
+    "cheerio": "^1.2.0",
+    "jsdom": "^28.1.0",
+    "sqlite3": "^5.1.7",
+    "turndown": "^7.2.2"
   }
 }

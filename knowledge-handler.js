@@ -5,10 +5,9 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const settings = require('./config/settings');
 const { initDatabase } = require('./lib/database');
-const webFetcher = require('./lib/web-fetcher');
+const browserFetcher = require('./lib/browser-fetcher');
 const contentExtractor = require('./lib/content-extractor');
 const aiClient = require('./lib/ai-client');
-const contentValidator = require('./lib/content-validator');
 
 async function main() {
   const command = process.argv[2];
@@ -36,10 +35,10 @@ async function handleArticle() {
     // 获取URL参数
     const url = process.argv[4] || 'https://example.com';
     
-    console.log(`🔍 Fetching: ${url}`);
+    console.log(`🔍 Fetching with browser: ${url}`);
     
-    // 抓取网页内容
-    const fetchResult = await webFetcher.fetchWebpage(url);
+    // 使用浏览器抓取网页内容
+    const fetchResult = await browserFetcher.fetch(url);
     
     if (!fetchResult.success) {
       throw new Error(fetchResult.error);
@@ -48,17 +47,6 @@ async function handleArticle() {
     console.log('✅ Content fetched successfully!');
     console.log(`Status: ${fetchResult.status}`);
     console.log(`Content length: ${fetchResult.html.length} characters`);
-    
-    // 检查是否为验证页面
-    if (contentValidator.isVerificationPage(fetchResult.html, url)) {
-      console.log('⚠️ Detected anti-bot verification page');
-      const suggestion = contentValidator.getHandlingSuggestion(url);
-      console.log(suggestion);
-      console.log('\n💡 Manual processing mode:');
-      console.log('Please copy and paste the article content directly to me,');
-      console.log('and I will process it with AI immediately (skip fetching step).');
-      return;
-    }
     
     // 提取结构化内容
     const extractedContent = contentExtractor.extract(fetchResult.html, url);
@@ -79,8 +67,12 @@ async function handleArticle() {
     
   } catch (error) {
     console.error('❌ Article processing failed:', error.message);
-    if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-      console.log('💡 Tip: The article cannot be auto-fetched. Please save it manually and reply "已保存" to continue processing.');
+    if (error.message.includes('内存不足') || error.message.includes('memory')) {
+      console.log('💡 Tip: 服务器资源紧张，请手动复制文章内容并发送给我，我会直接进行智能处理。');
+    } else if (error.message.includes('timeout') || error.message.includes('超时')) {
+      console.log('💡 Tip: 页面加载超时，请稍后重试或手动复制内容。');
+    } else {
+      console.log('💡 Tip: 该文章无法自动抓取，请手动复制文章内容并发送给我，我会直接进行智能处理。');
     }
     process.exit(1);
   }

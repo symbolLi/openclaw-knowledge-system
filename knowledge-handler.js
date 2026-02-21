@@ -5,9 +5,10 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const settings = require('./config/settings');
 const { initDatabase } = require('./lib/database');
-const { fetchWebpage } = require('./lib/web-fetcher');
-const { extractContent } = require('./lib/content-extractor');
-const { processWithAI } = require('./lib/ai-client');
+const webFetcher = require('./lib/web-fetcher');
+const contentExtractor = require('./lib/content-extractor');
+const aiClient = require('./lib/ai-client');
+const contentValidator = require('./lib/content-validator');
 
 async function main() {
   const command = process.argv[2];
@@ -38,29 +39,43 @@ async function handleArticle() {
     console.log(`🔍 Fetching: ${url}`);
     
     // 抓取网页内容
-    const fetchResult = await fetchWebpage(url);
+    const fetchResult = await webFetcher.fetchWebpage(url);
     
     if (!fetchResult.success) {
       throw new Error(fetchResult.error);
     }
     
     console.log('✅ Content fetched successfully!');
+    console.log(`Status: ${fetchResult.status}`);
+    console.log(`Content length: ${fetchResult.html.length} characters`);
+    
+    // 检查是否为验证页面
+    if (contentValidator.isVerificationPage(fetchResult.html, url)) {
+      console.log('⚠️ Detected anti-bot verification page');
+      const suggestion = contentValidator.getHandlingSuggestion(url);
+      console.log(suggestion);
+      console.log('\n💡 Manual processing mode:');
+      console.log('Please copy and paste the article content directly to me,');
+      console.log('and I will process it with AI immediately (skip fetching step).');
+      return;
+    }
     
     // 提取结构化内容
-    const extractedContent = extractContent(fetchResult.html, url);
+    const extractedContent = contentExtractor.extract(fetchResult.html, url);
     console.log(`Title: ${extractedContent.title}`);
     console.log(`Content length: ${extractedContent.content.length} characters`);
     
     // AI智能处理
     console.log('🤖 Processing with AI...');
-    const aiResult = await processWithAI(extractedContent.title, extractedContent.content);
+    const aiResult = await aiClient.processContent(extractedContent.content, extractedContent.title);
     
     console.log('✅ AI processing completed!');
     console.log(`Category: ${aiResult.category}`);
     console.log(`Summary: ${aiResult.summary}`);
     console.log(`Keywords: ${aiResult.keywords}`);
     
-    // TODO: 集成存储等后续步骤
+    // 关闭数据库连接
+    db.close();
     
   } catch (error) {
     console.error('❌ Article processing failed:', error.message);

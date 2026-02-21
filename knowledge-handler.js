@@ -6,6 +6,8 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 const settings = require('./config/settings');
 const { initDatabase } = require('./lib/database');
 const { fetchWebpage } = require('./lib/web-fetcher');
+const { extractContent } = require('./lib/content-extractor');
+const { processWithAI } = require('./lib/ai-client');
 
 async function main() {
   const command = process.argv[2];
@@ -30,19 +32,35 @@ async function handleArticle() {
     // 初始化数据库
     const db = await initDatabase();
     
-    // 获取URL参数（简化版本，实际会从命令行参数获取）
+    // 获取URL参数
     const url = process.argv[4] || 'https://example.com';
     
     console.log(`🔍 Fetching: ${url}`);
     
     // 抓取网页内容
-    const content = await fetchWebpage(url);
+    const fetchResult = await fetchWebpage(url);
+    
+    if (!fetchResult.success) {
+      throw new Error(fetchResult.error);
+    }
     
     console.log('✅ Content fetched successfully!');
-    console.log(`Title: ${content.title}`);
-    console.log(`Content length: ${content.content.length} characters`);
     
-    // TODO: 集成AI处理、存储等后续步骤
+    // 提取结构化内容
+    const extractedContent = extractContent(fetchResult.html, url);
+    console.log(`Title: ${extractedContent.title}`);
+    console.log(`Content length: ${extractedContent.content.length} characters`);
+    
+    // AI智能处理
+    console.log('🤖 Processing with AI...');
+    const aiResult = await processWithAI(extractedContent.title, extractedContent.content);
+    
+    console.log('✅ AI processing completed!');
+    console.log(`Category: ${aiResult.category}`);
+    console.log(`Summary: ${aiResult.summary}`);
+    console.log(`Keywords: ${aiResult.keywords}`);
+    
+    // TODO: 集成存储等后续步骤
     
   } catch (error) {
     console.error('❌ Article processing failed:', error.message);

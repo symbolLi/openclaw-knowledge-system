@@ -5,7 +5,7 @@ require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const settings = require('./config/settings');
 const { initDatabase } = require('./lib/database');
-const browserFetcher = require('./lib/browser-fetcher');
+const { fetchWebpage } = require('./lib/web-fetcher');
 const contentExtractor = require('./lib/content-extractor');
 const aiClient = require('./lib/ai-client');
 
@@ -37,16 +37,14 @@ async function handleArticle() {
     
     console.log(`🔍 Fetching: ${url}`);
     
-    // 使用浏览器抓取网页内容
-    const fetchResult = await browserFetcher.fetch(url);
+    // 抓取网页内容
+    const fetchResult = await fetchWebpage(url);
     
     if (!fetchResult.success) {
       throw new Error(fetchResult.error);
     }
     
-    console.log('✅ Content fetched successfully!');
-    console.log(`Status: ${fetchResult.status}`);
-    console.log(`Content length: ${fetchResult.html.length} characters`);
+    console t.log('✅ Content fetched successfully!');
     
     // 提取结构化内容
     const extractedContent = contentExtractor.extract(fetchResult.html, url);
